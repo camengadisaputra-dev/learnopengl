@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "Shader.h"
+#include "Texture.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -39,12 +40,15 @@ int main() {
 	Shader ourshader("vertex.vert", "fragment.frag");
 
 	float vertices[] = {
-		 0.0f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // top
-		 0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f,	 0.0f, 0.0f, 1.0f, // bottom left
+		-0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  0.0f, 1.0f, // top left
+		 0.5f,  0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f, // top right
+		 0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f,	 1.0f, 1.0f, 0.0f,  0.0f, 0.0f, // bottom left
+
 	};
 	unsigned int indices[] = {  // note that we start from 0!
 		0, 1, 2,   // first triangle
+		2, 3, 0,   // first triangle
 	};
 
 	// VBO Vertex Buffer Objects
@@ -57,11 +61,21 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0); // this required
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	Texture texture1;
+	texture1.loadTexture("container.jpg", GL_RGB);
+	Texture texture2;
+	texture2.loadTexture("awesomeface.png", GL_RGBA);
+
+
 	glGenBuffers(1, &EBO);
 	// REMEMBER TO BINDING FIRST
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -70,6 +84,10 @@ int main() {
 	// UNBIND IT
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+
+	ourshader.use();
+	glUniform1i(glGetUniformLocation(ourshader.ID, "texture1"), 0);
+	ourshader.setInt("texture2", 1);
 
 	//buffer loop
 	while (!glfwWindowShouldClose(window))
@@ -80,6 +98,11 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glActiveTexture(GL_TEXTURE0);
+		texture1.applyTexture();
+		glActiveTexture(GL_TEXTURE1);
+		texture2.applyTexture();
+
 		//int vertexLocation = glGetUniformLocation(shaderProgram, "ourColor");
 		//float timeValue = glfwGetTime();
 		//float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
@@ -88,9 +111,7 @@ int main() {
 		//glUniform4f(vertexLocation, 0.1f, greenValue, .5f, 1.0f); // this must use after use program
 
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		// check and call event
 		glfwPollEvents();
